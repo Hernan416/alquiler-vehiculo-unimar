@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Ajustamos la ruta ya que ahora estamos dentro de la carpeta /Clientes
 require_once 'conexion.php'; 
 
 $error = '';
@@ -19,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user) {
-                // Verificamos la contraseña
                 if (password_verify($password, $user['password'])) {
                     if ($user['activo'] == 1) {
                         $stmt_cli = $pdo->prepare("SELECT id_cliente, nombre FROM clientes WHERE id_usuario = ?");
@@ -39,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $error = "Tu cuenta está inactiva.";
                     }
                 } else {
-                    // Requerimiento específico: Error exacto para contraseña
                     $error = "contraseña inválida";
                 }
             } else {
@@ -50,38 +47,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } 
     
-    // La lógica de registro se mantiene igual, pero recuerda que el password_hash() 
-    // es necesario para que luego password_verify() funcione.
     elseif ($action === 'register') {
+        // Capturamos TODOS los datos del perfil
         $nombre = trim($_POST['nombre']);
         $apellido = trim($_POST['apellido']);
         $identificacion = $_POST['identificacion'];
+        $telefono = trim($_POST['telefono']);
+        $licencia_conducir = trim($_POST['licencia_conducir']);
         $email = trim($_POST['email']);
         $password = $_POST['password'];
 
-        if (!empty($nombre) && !empty($apellido) && !empty($identificacion) && !empty($email) && !empty($password)) {
+        if (!empty($nombre) && !empty($apellido) && !empty($identificacion) && !empty($telefono) && !empty($licencia_conducir) && !empty($email) && !empty($password)) {
             try {
                 $pdo->beginTransaction();
+                
+                // Verificar si el email ya existe
                 $stmt = $pdo->prepare("SELECT id_usuario FROM usuarios WHERE email = ?");
                 $stmt->execute([$email]);
                 if ($stmt->fetch()) {
                     throw new Exception("El correo ya está registrado.");
                 }
 
+                // 1. Insertar en usuarios
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                 $stmt_user = $pdo->prepare("INSERT INTO usuarios (email, password, rol, activo) VALUES (?, ?, 'cliente', 1)");
                 $stmt_user->execute([$email, $hashed_password]);
                 $id_usuario = $pdo->lastInsertId();
 
-                $stmt_cli = $pdo->prepare("INSERT INTO clientes (nombre, apellido, email, identificacion, id_usuario) VALUES (?, ?, ?, ?, ?)");
-                $stmt_cli->execute([$nombre, $apellido, $email, $identificacion, $id_usuario]);
+                // 2. Insertar en clientes con TODOS los datos requeridos
+                $stmt_cli = $pdo->prepare("INSERT INTO clientes (nombre, apellido, email, identificacion, id_usuario, telefono, licencia_conducir) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt_cli->execute([$nombre, $apellido, $email, $identificacion, $id_usuario, $telefono, $licencia_conducir]);
 
                 $pdo->commit();
-                $success = "Registro exitoso. Ya puedes entrar.";
+                $success = "Perfil creado exitosamente. Ya puedes iniciar sesión.";
             } catch (Exception $e) {
                 $pdo->rollBack();
                 $error = $e->getMessage();
             }
+        } else {
+            $error = "Por favor, completa todos los campos del perfil.";
         }
     }
 }
@@ -122,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4 font-sans text-brandDark">
 
-    <div class="bg-brandWhite rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-brandMain/20">
+    <div class="bg-brandWhite rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-brandMain/20 transition-all">
         
         <div class="bg-brandDark p-8 text-center">
             <h1 class="font-brand text-4xl text-brandWhite tracking-wider">LHFM <span class="text-brandMain">LOGISTICS</span></h1>
@@ -140,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         <?php endif; ?>
 
-        <div id="login-section" class="p-10">
+        <div id="login-section" class="p-10 <?php echo ($action === 'register' && $error) ? 'hidden' : ''; ?>">
             <form method="POST" action="">
                 <input type="hidden" name="action" value="login">
                 
@@ -164,26 +168,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         </div>
 
-        <div id="register-section" class="p-10 hidden">
+        <div id="register-section" class="p-10 <?php echo ($action === 'register' && $error) ? '' : 'hidden'; ?>">
             <form method="POST" action="">
                 <input type="hidden" name="action" value="register">
+                
                 <div class="grid grid-cols-2 gap-4 mb-4">
-                    <input type="text" name="nombre" placeholder="Nombre" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
-                    <input type="text" name="apellido" placeholder="Apellido" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Nombre</label>
+                        <input type="text" name="nombre" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Apellido</label>
+                        <input type="text" name="apellido" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                    </div>
                 </div>
-                <select name="identificacion" class="w-full mb-4 px-3 py-2 border rounded border-brandMain/30 text-sm bg-white outline-none">
-                    <option value="CI">Cédula (CI)</option>
-                    <option value="Pasaporte">Pasaporte</option>
-                </select>
-                <input type="email" name="email" placeholder="Correo electrónico" required class="w-full mb-4 px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
-                <input type="password" name="password" placeholder="Contraseña" required class="w-full mb-6 px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Tipo de Documento</label>
+                    <select name="identificacion" class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm bg-white outline-none">
+                        <option value="CI">Cédula (CI)</option>
+                        <option value="Pasaporte">Pasaporte</option>
+                        <option value="RIF">RIF</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Teléfono</label>
+                        <input type="text" name="telefono" placeholder="Ej. 0414-1234567" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Nro. Licencia</label>
+                        <input type="text" name="licencia_conducir" placeholder="Ej. V-12345678" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Correo Electrónico</label>
+                    <input type="email" name="email" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Contraseña</label>
+                    <input type="password" name="password" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                </div>
 
                 <button type="submit" class="w-full bg-brandDark text-brandWhite font-bold py-3 rounded hover:bg-brandBlue-900 transition-all font-heading uppercase">
-                    Registrarme
+                    Completar Registro
                 </button>
             </form>
             <div class="text-center mt-6">
-                <button onclick="toggleForms()" class="text-xs font-bold text-brandBlue-900 underline uppercase">Volver al login</button>
+                <button onclick="toggleForms()" class="text-xs font-bold text-brandBlue-900 underline uppercase hover:text-brandDark">Volver al login</button>
             </div>
         </div>
     </div>
@@ -192,6 +227,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         function toggleForms() {
             document.getElementById('login-section').classList.toggle('hidden');
             document.getElementById('register-section').classList.toggle('hidden');
+            
+            // Limpiar alertas al cambiar de vista
+            const alerts = document.querySelectorAll('.bg-red-50, .bg-green-50');
+            alerts.forEach(alert => alert.style.display = 'none');
         }
     </script>
 </body>
