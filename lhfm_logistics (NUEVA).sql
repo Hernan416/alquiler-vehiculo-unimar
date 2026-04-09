@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 08-04-2026 a las 04:30:15
+-- Tiempo de generación: 09-04-2026 a las 04:53:48
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.0.30
 
@@ -135,7 +135,7 @@ CREATE TABLE `alquileres` (
   `fecha_retorno_real` datetime DEFAULT NULL,
   `cantidad_dias` int(11) DEFAULT 0,
   `monto_total_alquiler` decimal(10,2) DEFAULT 0.00,
-  `estado_alquiler` enum('Activo','Finalizado','Reservado') DEFAULT NULL,
+  `estado_alquiler` enum('Activo','Finalizado','Reservado','Cancelado') DEFAULT NULL,
   `monto_deposito` decimal(10,2) DEFAULT 0.00,
   `estado_deposito` enum('Retenido','Devuelto','Ejecutado Parcial','Ejecutado Total') DEFAULT 'Retenido',
   `notas_deposito` text DEFAULT NULL
@@ -148,7 +148,9 @@ CREATE TABLE `alquileres` (
 INSERT INTO `alquileres` (`id_alquiler`, `id_vehiculo`, `id_cliente`, `fecha_salida`, `fecha_retorno_prevista`, `fecha_retorno_real`, `cantidad_dias`, `monto_total_alquiler`, `estado_alquiler`, `monto_deposito`, `estado_deposito`, `notas_deposito`) VALUES
 (1, 1, 1, '2026-03-10 09:00:00', '2026-03-15 09:00:00', '2026-03-15 10:30:00', 5, 375.00, 'Finalizado', 0.00, 'Retenido', NULL),
 (2, 2, 2, '2026-03-12 10:00:00', '2026-03-14 10:00:00', '2026-03-14 09:00:00', 2, 220.00, 'Finalizado', 0.00, 'Retenido', NULL),
-(3, 6, 4, '2026-03-29 09:00:00', '2026-04-03 09:00:00', NULL, 5, 800.00, 'Activo', 0.00, 'Retenido', NULL);
+(3, 6, 4, '2026-03-29 09:00:00', '2026-04-03 09:00:00', NULL, 5, 800.00, 'Activo', 0.00, 'Retenido', NULL),
+(4, 1, 9, '2026-04-10 09:00:00', '2026-04-13 09:00:00', NULL, 3, 182.00, 'Cancelado', 150.00, 'Retenido', NULL),
+(5, 12, 9, '2026-04-09 09:00:00', '2026-04-13 09:00:00', NULL, 4, 400.00, 'Reservado', 80.00, 'Retenido', NULL);
 
 --
 -- Disparadores `alquileres`
@@ -196,7 +198,9 @@ CREATE TABLE `alquiler_extras` (
 
 INSERT INTO `alquiler_extras` (`id_alquiler`, `id_extra`, `cantidad`) VALUES
 (1, 2, 1),
-(2, 3, 1);
+(2, 3, 1),
+(4, 1, 1),
+(4, 4, 1);
 
 -- --------------------------------------------------------
 
@@ -231,6 +235,8 @@ CREATE TABLE `clientes` (
   `apellido` varchar(100) NOT NULL,
   `telefono` varchar(20) DEFAULT NULL,
   `licencia_conducir` varchar(50) DEFAULT NULL,
+  `direccion` text DEFAULT NULL,
+  `id_metodo_pago_preferido` int(11) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `identificacion` enum('CI','Pasaporte','RIF') NOT NULL,
   `id_usuario` int(11) DEFAULT NULL
@@ -240,13 +246,14 @@ CREATE TABLE `clientes` (
 -- Volcado de datos para la tabla `clientes`
 --
 
-INSERT INTO `clientes` (`id_cliente`, `nombre`, `apellido`, `telefono`, `licencia_conducir`, `email`, `identificacion`, `id_usuario`) VALUES
-(1, 'Hernán', 'Narváez', '0412-5556677', 'V-25111222', 'hernan.dev@email.com', 'CI', NULL),
-(2, 'Miranda', 'Brito', '0424-8889900', 'V-26333444', 'Miranda@email.com', 'CI', NULL),
-(3, 'Carlos', 'Rodríguez', '0414-7771122', 'V-15888999', 'carlos.rod@gmail.com', 'CI', NULL),
-(4, 'Sarah', 'Smith', '+1-202-555-0101', 'USA-D09922', 'ssmith.travel@yahoo.com', 'Pasaporte', NULL),
-(5, 'Miguel', 'Ángel', '0295-4443322', 'V-12000555', 'm.angel@hotmail.com', 'CI', NULL),
-(6, 'Inversiones', 'Gómez C.A.', '0295-1110022', 'J-30555666-0', 'admin@gomezca.ve', 'RIF', NULL);
+INSERT INTO `clientes` (`id_cliente`, `nombre`, `apellido`, `telefono`, `licencia_conducir`, `direccion`, `id_metodo_pago_preferido`, `email`, `identificacion`, `id_usuario`) VALUES
+(1, 'Hernán', 'Narváez', '0412-5556677', 'V-25111222', NULL, NULL, 'hernan.dev@email.com', 'CI', NULL),
+(2, 'Miranda', 'Brito', '0424-8889900', 'V-26333444', NULL, NULL, 'Miranda@email.com', 'CI', NULL),
+(3, 'Carlos', 'Rodríguez', '0414-7771122', 'V-15888999', NULL, NULL, 'carlos.rod@gmail.com', 'CI', NULL),
+(4, 'Sarah', 'Smith', '+1-202-555-0101', 'USA-D09922', NULL, NULL, 'ssmith.travel@yahoo.com', 'Pasaporte', NULL),
+(5, 'Miguel', 'Ángel', '0295-4443322', 'V-12000555', NULL, NULL, 'm.angel@hotmail.com', 'CI', NULL),
+(6, 'Inversiones', 'Gómez C.A.', '0295-1110022', 'J-30555666-0', NULL, NULL, 'admin@gomezca.ve', 'RIF', NULL),
+(9, 'Hernan', 'Narvaez', '04248243132', '32702396', 'Hotel unik', 1, 'hernan.test@email.com', 'CI', 4);
 
 -- --------------------------------------------------------
 
@@ -289,6 +296,13 @@ CREATE TABLE `historial_alquileres` (
   `fecha_evento` datetime DEFAULT current_timestamp(),
   `observaciones` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `historial_alquileres`
+--
+
+INSERT INTO `historial_alquileres` (`id_historial`, `id_alquiler`, `id_cliente`, `id_vehiculo`, `id_pago`, `estado_alquiler`, `monto_registrado`, `fecha_evento`, `observaciones`) VALUES
+(1, 4, 9, 1, NULL, 'Cancelado', 182.00, '2026-04-08 22:53:02', 'Cambio automático: De Reservado a Cancelado');
 
 -- --------------------------------------------------------
 
@@ -355,7 +369,8 @@ CREATE TABLE `pagos` (
 INSERT INTO `pagos` (`id_pago`, `id_alquiler`, `id_extra`, `id_metodo_pago`, `fecha_pago`, `monto_total`, `referencia`) VALUES
 (1, 1, NULL, 8, '2026-03-17 10:48:34', 375.00, 'ZELLE-H123'),
 (2, 1, 2, 5, '2026-03-17 10:48:34', 35.00, 'CASH-001'),
-(3, 2, NULL, 1, '2026-03-17 10:48:34', 220.00, 'PM-MIRANDA1');
+(3, 2, NULL, 1, '2026-03-17 10:48:34', 220.00, 'PM-MIRANDA1'),
+(4, 5, NULL, 1, '2026-04-08 22:23:51', 400.00, '12344531');
 
 -- --------------------------------------------------------
 
@@ -376,7 +391,7 @@ CREATE TABLE `registro_de_pagos` (
 ,`Metodo_pago` varchar(50)
 ,`Monto_pagado` decimal(10,2)
 ,`Referencia` varchar(100)
-,`Estatus_actual` enum('Activo','Finalizado','Reservado')
+,`Estatus_actual` enum('Activo','Finalizado','Reservado','Cancelado')
 );
 
 -- --------------------------------------------------------
@@ -429,12 +444,7 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id_usuario`, `email`, `password`, `rol`, `fecha_registro`, `activo`) VALUES
-(1, 'admin@logistics.com', '$12345678', 'admin', '2026-04-07 22:29:56', 1),
-(2, 'Mimi@empresa.com', '$12345678', 'empleado', '2026-04-07 22:29:56', 1),
-(3, 'Hernan@empresa.com', '$12345678', 'empleado', '2026-04-07 22:29:56', 1),
-(4, 'Fab@empresa.com', '$12345678', 'empleado', '2026-04-07 22:29:56', 1),
-(5, 'Laurylamasgenial@gmail.com', '$12345678', 'cliente', '2026-04-07 22:29:56', 1),
-(6, 'Veronicaingenchismesito@gmail.com', '$12345678', 'cliente', '2026-04-07 22:29:56', 1);
+(4, 'hernan.test@email.com', '$2y$10$PaCVgG4NZJ/As4GefkMAWOvEavexWwhKcxdokluv9Qs7OyIFevLzO', 'cliente', '2026-04-07 20:47:47', 1);
 
 -- --------------------------------------------------------
 
@@ -463,11 +473,11 @@ INSERT INTO `vehiculos` (`id_vehiculo`, `placa`, `marca`, `modelo`, `anio`, `col
 (1, 'AM-123-NE', 'Toyota', 'Corolla', 2024, 'Blanco', 5, 'Disponible', 2, 'https://di-enrollment-api.s3.amazonaws.com/toyota/models/2024/corolla-hatchback/colors/finish_line_red.png'),
 (2, 'SUV-001-MG', 'Suzuki', 'Jimny', 2023, 'Verde Selva', 4, 'Alquilado', 3, 'https://img-ik.cars.co.za/news-site-za/images/2023/11/j5.jpg'),
 (3, 'ECO-555-VE', 'Hyundai', 'Getz', 2011, 'Plata', 5, 'Disponible', 1, 'https://cdn.wheel-size.com/thumbs/b7/b3/b7b3c9e53aaab1b95ad618359a0baefa.jpg'),
-(4, 'TX-998-IO', 'Jeep', 'Wrangler', 2022, 'Rojo', 4, 'Mantenimiento', 3, 'https://www.autobics.com/wp-content/uploads/2022/10/2022-Jeep-Wrangler-Rubicon-4X4-Hydro-Blue-Pearl-Coat.jpg\r\n'),
+(4, 'TX-998-IO', 'Jeep', 'Wrangler', 2022, 'Rojo', 4, 'Mantenimiento', 3, 'https://www.autobics.com/wp-content/uploads/2022/10/2022-Jeep-Wrangler-Rubicon-4X4-Hydro-Blue-Pearl-Coat.jpg'),
 (5, 'KIA-442-SA', 'Kia', 'Picanto', 2023, 'Azul', 4, 'Disponible', 1, 'https://falcondrive.ae/public/storage/cars/August2024/qsSUMoBVwudMVnl6uKsZ.png'),
 (6, 'EXP-771-RT', 'Ford', 'Explorer', 2021, 'Negro', 7, 'Alquilado', 3, 'https://www.motortrend.com/uploads/sites/10/2020/12/2021-ford-explorer-st-4wd-suv-angular-front.png'),
 (7, 'ABC-101', 'Toyota', 'Corolla', 2022, 'Gris', 5, 'Disponible', 2, 'https://d2ivfcfbdvj3sm.cloudfront.net/7fc965ab77efe6e0fa62e4ca1ea7673bb65843530c1e3d8e88cb10/stills_0640_png/MY2022/52227/52227_st0640_116.png'),
-(8, 'WGO-102', 'Toyota', 'Wigo', 2018, 'Blanco', 5, 'Disponible', 1, 'https://cdn.wheel-size.com/thumbs/1c/f5/1cf56585e6785d057652bdbc7361edff.jpg\r\n'),
+(8, 'WGO-102', 'Toyota', 'Wigo', 2018, 'Blanco', 5, 'Disponible', 1, 'https://cdn.wheel-size.com/thumbs/1c/f5/1cf56585e6785d057652bdbc7361edff.jpg'),
 (9, 'ELN-103', 'Hyundai', 'Elantra', 2009, 'Negro', 5, 'Disponible', 2, 'https://th.bing.com/th/id/R.be995ff524d19f2014c8241b887afbe4?rik=pEg4OxUxtwmKbA&pid=ImgRaw&r=0'),
 (10, 'TUC-104', 'Hyundai', 'Tucson', 2012, 'Plata', 5, 'Disponible', 3, 'https://picolio.auto123.com/12photo/hyundai/2012-hyundai-tucson-gl_1.jpg'),
 (11, 'RIO-105', 'Kia', 'Rio', 2008, 'Rojo', 5, 'Disponible', 1, 'https://images.hgmsites.net/med/2008-kia-rio-5dr-hb-auto-copper_100054722_m.jpg'),
@@ -518,7 +528,8 @@ ALTER TABLE `categorias`
 --
 ALTER TABLE `clientes`
   ADD PRIMARY KEY (`id_cliente`),
-  ADD KEY `fk_cliente_usuario` (`id_usuario`);
+  ADD KEY `fk_cliente_usuario` (`id_usuario`),
+  ADD KEY `fk_cliente_metodo_pago` (`id_metodo_pago_preferido`);
 
 --
 -- Indices de la tabla `extras`
@@ -587,7 +598,7 @@ ALTER TABLE `vehiculos`
 -- AUTO_INCREMENT de la tabla `alquileres`
 --
 ALTER TABLE `alquileres`
-  MODIFY `id_alquiler` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_alquiler` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `categorias`
@@ -599,7 +610,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT de la tabla `extras`
@@ -611,7 +622,7 @@ ALTER TABLE `extras`
 -- AUTO_INCREMENT de la tabla `historial_alquileres`
 --
 ALTER TABLE `historial_alquileres`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `mantenimientos`
@@ -629,7 +640,7 @@ ALTER TABLE `metodos_pago`
 -- AUTO_INCREMENT de la tabla `pagos`
 --
 ALTER TABLE `pagos`
-  MODIFY `id_pago` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_pago` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `tarifas`
@@ -641,7 +652,7 @@ ALTER TABLE `tarifas`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `vehiculos`
@@ -671,6 +682,7 @@ ALTER TABLE `alquiler_extras`
 -- Filtros para la tabla `clientes`
 --
 ALTER TABLE `clientes`
+  ADD CONSTRAINT `fk_cliente_metodo_pago` FOREIGN KEY (`id_metodo_pago_preferido`) REFERENCES `metodos_pago` (`id_metodo_pago`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_cliente_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --

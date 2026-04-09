@@ -87,9 +87,14 @@ $nombre_usuario = $_SESSION['cliente_nombre'] ?? 'Invitado';
 
                 <div class="flex items-center">
                     <?php if($is_logged_in): ?>
-                        <div class="flex items-center gap-4">
-                            <span class="font-medium text-sm">Hola, <?php echo htmlspecialchars($nombre_usuario); ?></span>
-                            <a href="logout.php" class="text-sm text-red-500 font-semibold hover:underline">Salir</a>
+                        <div class="flex items-center gap-6">
+                            <a href="perfil.php" class="flex items-center gap-2 text-brandDark font-bold hover:text-brandBlue-900 transition-colors group">
+                                <div class="w-9 h-9 bg-brandBlue-900 text-white rounded-full flex items-center justify-center text-sm group-hover:bg-brandDark transition-colors shadow-md">
+                                    <?php echo strtoupper(substr($nombre_usuario, 0, 1)); ?>
+                                </div>
+                                Mi Perfil
+                            </a>
+                            <a href="logout.php" class="text-xs text-red-500 font-bold uppercase tracking-widest hover:underline bg-red-50 px-3 py-1.5 rounded">Salir</a>
                         </div>
                     <?php else: ?>
                         <a href="login.php" class="bg-brandBlue-900 text-white px-5 py-2.5 rounded shadow hover:bg-brandDark transition-colors font-semibold text-sm">
