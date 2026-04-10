@@ -33,6 +33,12 @@ try {
 }
 
 $nombre_admin = $_SESSION['cliente_nombre'] ?? 'Administrador';
+
+if ($_SESSION['rol'] !== 'admin') {
+    header("Location: ../login.php");
+    exit();
+}
+
 ?>
 
 <!DOCTYPE html>
