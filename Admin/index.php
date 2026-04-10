@@ -79,9 +79,7 @@ $nombre_admin = $_SESSION['cliente_nombre'] ?? 'Administrador';
             <a href="index.php" class="flex items-center gap-3 py-3 px-4 bg-brandBlue-900/40 rounded-lg font-heading tracking-wider uppercase text-xs border border-brandBlue-900/50">
                  Dashboard
             </a>
-            <a href="gestion_alquileres.php" class="flex items-center gap-3 py-3 px-4 hover:bg-white/5 rounded-lg font-heading tracking-wider uppercase text-xs transition-all text-white/70 hover:text-white">
-                 Alquileres
-            </a>
+            
             <a href="flota.php" class="flex items-center gap-3 py-3 px-4 hover:bg-white/5 rounded-lg font-heading tracking-wider uppercase text-xs transition-all text-white/70 hover:text-white">
                  Flota y Vehículos
             </a>
@@ -91,10 +89,10 @@ $nombre_admin = $_SESSION['cliente_nombre'] ?? 'Administrador';
         </nav>
 
         <div class="p-6 border-t border-white/10 space-y-4">
-            <a href="../index.php" class="block text-center bg-brandMain/10 hover:bg-brandMain/20 text-white font-heading tracking-widest text-[10px] py-3 rounded uppercase border border-white/5 transition-all">
+            <a href="../Clientes/index.php" class="block text-center bg-brandMain/10 hover:bg-brandMain/20 text-white font-heading tracking-widest text-[10px] py-3 rounded uppercase border border-white/5 transition-all">
                 Ir a Vista Cliente
             </a>
-            <a href="../logout.php" class="block text-center text-red-400 font-heading tracking-widest text-[10px] uppercase hover:underline">
+            <a href="../login.php" class="block text-center text-red-400 font-heading tracking-widest text-[10px] uppercase hover:underline">
                 Cerrar Sesión Segura
             </a>
         </div>
