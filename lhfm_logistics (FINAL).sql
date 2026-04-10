@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 09-04-2026 a las 04:53:48
+-- Tiempo de generación: 10-04-2026 a las 04:08:12
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.0.30
 
@@ -25,6 +25,15 @@ DELIMITER $$
 --
 -- Procedimientos
 --
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_buscar_por_presupuesto` (IN `p_presupuesto` DECIMAL(10,2))   BEGIN
+    SELECT v.*, c.nombre_categoria, 
+           (SELECT MIN(precio_dia) FROM tarifas t WHERE t.id_categoria = v.id_categoria) as precio_base
+    FROM vehiculos v
+    LEFT JOIN categorias c ON v.id_categoria = c.id_categoria
+    WHERE v.estado = 'Disponible'
+    AND (SELECT MIN(precio_dia) FROM tarifas t WHERE t.id_categoria = v.id_categoria) <= p_presupuesto;
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_finalizar_y_calcular_alquiler` (IN `p_id_alquiler` INT, IN `p_fecha_retorno_real` DATETIME)   BEGIN
     DECLARE v_id_vehiculo INT;
     DECLARE v_id_categoria INT;
@@ -253,7 +262,8 @@ INSERT INTO `clientes` (`id_cliente`, `nombre`, `apellido`, `telefono`, `licenci
 (4, 'Sarah', 'Smith', '+1-202-555-0101', 'USA-D09922', NULL, NULL, 'ssmith.travel@yahoo.com', 'Pasaporte', NULL),
 (5, 'Miguel', 'Ángel', '0295-4443322', 'V-12000555', NULL, NULL, 'm.angel@hotmail.com', 'CI', NULL),
 (6, 'Inversiones', 'Gómez C.A.', '0295-1110022', 'J-30555666-0', NULL, NULL, 'admin@gomezca.ve', 'RIF', NULL),
-(9, 'Hernan', 'Narvaez', '04248243132', '32702396', 'Hotel unik', 1, 'hernan.test@email.com', 'CI', 4);
+(9, 'Hernan', 'Narvaez', '04248243132', '32702396', 'Hotel unik', 1, 'hernan.test@email.com', 'CI', 4),
+(10, 'Hernan', 'admin', '04248243132', '1231241232', NULL, NULL, 'hernan@gmail.com', '', 5);
 
 -- --------------------------------------------------------
 
@@ -444,7 +454,8 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id_usuario`, `email`, `password`, `rol`, `fecha_registro`, `activo`) VALUES
-(4, 'hernan.test@email.com', '$2y$10$PaCVgG4NZJ/As4GefkMAWOvEavexWwhKcxdokluv9Qs7OyIFevLzO', 'cliente', '2026-04-07 20:47:47', 1);
+(4, 'hernan.test@email.com', '$2y$10$PaCVgG4NZJ/As4GefkMAWOvEavexWwhKcxdokluv9Qs7OyIFevLzO', 'cliente', '2026-04-07 20:47:47', 1),
+(5, 'hernan@gmail.com', '$2y$10$aQGCt87Y2.lER0nZHFc5du3xVLsngJsoOlOincZ4pVUQOU74cWxH2', 'admin', '2026-04-09 20:50:57', 1);
 
 -- --------------------------------------------------------
 
@@ -460,7 +471,7 @@ CREATE TABLE `vehiculos` (
   `anio` int(11) DEFAULT NULL,
   `color` varchar(30) DEFAULT NULL,
   `capacidad_pasajeros` int(11) DEFAULT NULL,
-  `estado` enum('Disponible','Alquilado','Mantenimiento') DEFAULT 'Disponible',
+  `estado` enum('Disponible','Alquilado','Mantenimiento','Retirado') DEFAULT 'Disponible',
   `id_categoria` int(11) DEFAULT NULL,
   `url_imagen` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -610,7 +621,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `extras`
@@ -652,7 +663,7 @@ ALTER TABLE `tarifas`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `vehiculos`
