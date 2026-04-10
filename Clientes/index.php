@@ -9,35 +9,46 @@ date_default_timezone_set('America/Caracas');
 $fecha_inicio_busqueda = $_GET['fecha_inicio'] ?? date('Y-m-d');
 $fecha_fin_busqueda = $_GET['fecha_fin'] ?? date('Y-m-d', strtotime('+3 days'));
 $ubicacion = $_GET['ubicacion'] ?? 'aeropuerto';
+// 1. Capturar los nuevos campos de la URL
+$presupuesto = $_GET['presupuesto'] ?? '';
+$id_categoria = $_GET['categoria'] ?? '';
+
+// 2. Obtener categorías para el select (añade esto antes del try)
+$categorias = $pdo->query("SELECT * FROM categorias")->fetchAll(PDO::FETCH_ASSOC);
 
 try {
-    // Consulta inteligente de disponibilidad:
-    // Trae los vehículos que no están en mantenimiento y que NO tienen un alquiler activo/reservado 
-    // cuyas fechas se solapen con el rango de búsqueda.
-    $query = "
-        SELECT v.*, c.nombre_categoria, 
-               (SELECT MIN(precio_dia) FROM tarifas t WHERE t.id_categoria = v.id_categoria) as precio_base
-        FROM vehiculos v
-        LEFT JOIN categorias c ON v.id_categoria = c.id_categoria
-        WHERE v.estado != 'Mantenimiento'
-        AND v.id_vehiculo NOT IN (
-            SELECT id_vehiculo 
-            FROM alquileres 
-            WHERE estado_alquiler IN ('Activo', 'Reservado')
-            AND DATE(fecha_salida) <= :fecha_fin
-            AND DATE(fecha_retorno_prevista) >= :fecha_inicio
-        )
-    ";
-    
-    $stmt = $pdo->prepare($query);
-    $stmt->execute([
-        ':fecha_inicio' => $fecha_inicio_busqueda,
-        ':fecha_fin' => $fecha_fin_busqueda
-    ]);
-    $vehiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    die("Error al cargar el catálogo: " . $e->getMessage());
-}
+    if (!empty($presupuesto)) {
+        // FILTRO POR PRESUPUESTO (Usando Procedimiento Almacenado)
+        $stmt = $pdo->prepare("CALL sp_buscar_por_presupuesto(?)");
+        $stmt->execute([$presupuesto]);
+        $vehiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt->closeCursor(); 
+    } else {
+        // FILTRO POR CATEGORÍA O GENERAL
+        $condiciones = ["v.estado != 'Mantenimiento'"];
+        $params = [':f_fin' => $fecha_fin_busqueda, ':f_ini' => $fecha_inicio_busqueda];
+
+        if (!empty($id_categoria)) {
+            $condiciones[] = "v.id_categoria = :id_cat";
+            $params[':id_cat'] = $id_categoria;
+        }
+
+        $where_sql = implode(" AND ", $condiciones);
+        $query = "SELECT v.*, c.nombre_categoria, 
+                  (SELECT MIN(precio_dia) FROM tarifas t WHERE t.id_categoria = v.id_categoria) as precio_base
+                  FROM vehiculos v
+                  LEFT JOIN categorias c ON v.id_categoria = c.id_categoria
+                  WHERE $where_sql
+                  AND v.id_vehiculo NOT IN (
+                      SELECT id_vehiculo FROM alquileres 
+                      WHERE estado_alquiler IN ('Activo', 'Reservado')
+                      AND DATE(fecha_salida) <= :f_fin AND DATE(fecha_retorno_prevista) >= :f_ini
+                  )";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $vehiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) { die("Error: " . $e->getMessage()); } 
 
 $is_logged_in = isset($_SESSION['usuario_id']);
 $nombre_usuario = $_SESSION['cliente_nombre'] ?? 'Invitado';
@@ -94,7 +105,7 @@ $nombre_usuario = $_SESSION['cliente_nombre'] ?? 'Invitado';
                                 </div>
                                 Mi Perfil
                             </a>
-                            <a href="logout.php" class="text-xs text-red-500 font-bold uppercase tracking-widest hover:underline bg-red-50 px-3 py-1.5 rounded">Salir</a>
+                            <a href="../login.php" class="text-xs text-red-500 font-bold uppercase tracking-widest hover:underline bg-red-50 px-3 py-1.5 rounded">Salir</a>
                         </div>
                     <?php else: ?>
                         <a href="login.php" class="bg-brandBlue-900 text-white px-5 py-2.5 rounded shadow hover:bg-brandDark transition-colors font-semibold text-sm">
@@ -113,7 +124,7 @@ $nombre_usuario = $_SESSION['cliente_nombre'] ?? 'Invitado';
             <p class="text-brandMain text-lg sm:text-xl max-w-2xl mx-auto mb-12">Selecciona tus fechas para ver los vehículos disponibles.</p>
             
             <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl mx-auto text-left transform translate-y-8 border-t-4 border-brandBlue-900">
-                <form action="index.php" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <form action="index.php" method="GET" class="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
                     <div>
                         <label class="block text-xs font-bold text-brandDark/60 uppercase mb-2">Recogida</label>
                         <select name="ubicacion" class="w-full border-b-2 border-brandMain/30 py-2 focus:outline-none focus:border-brandBlue-900 bg-transparent font-medium">
@@ -130,7 +141,23 @@ $nombre_usuario = $_SESSION['cliente_nombre'] ?? 'Invitado';
                         <input type="date" name="fecha_fin" value="<?php echo $fecha_fin_busqueda; ?>" required min="<?php echo date('Y-m-d'); ?>" class="w-full border-b-2 border-brandMain/30 py-2 focus:outline-none focus:border-brandBlue-900 bg-transparent font-medium">
                     </div>
                     <div>
-                        <button type="submit" class="w-full bg-brandBlue-900 text-white font-bold py-3 rounded shadow hover:bg-brandDark transition-all">
+                        <label class="block text-xs font-bold text-brandDark/60 uppercase mb-2">Presupuesto ($)</label>
+                        <input type="number" name="presupuesto" value="<?php echo htmlspecialchars($presupuesto); ?>" placeholder="Máx..." class="w-full border-b-2 border-brandMain/30 py-2 focus:outline-none focus:border-brandBlue-900 bg-transparent font-medium">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-brandDark/60 uppercase mb-2">Categoría</label>
+                        <select name="categoria" class="w-full border-b-2 border-brandMain/30 py-2 focus:outline-none focus:border-brandBlue-900 bg-transparent font-medium">
+                            <option value="">Todas</option>
+                            <?php foreach($categorias as $cat): ?>
+                                <option value="<?php echo $cat['id_categoria']; ?>" <?php echo ($id_categoria == $cat['id_categoria']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($cat['nombre_categoria']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                   <div class="md:col-span-2">
+                        <button type="submit" class="w-full bg-brandBlue-900 text-white font-bold py-3 rounded shadow hover:bg-brandDark transition-all whitespace-nowrap text-sm">
                             BUSCAR DISPONIBILIDAD
                         </button>
                     </div>
