@@ -29,9 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if ($cliente) {
                             $_SESSION['cliente_id'] = $cliente['id_cliente'];
                             $_SESSION['cliente_nombre'] = $cliente['nombre'];
+                        }                       
+                        if ($user['rol'] === 'admin') {
+                            header("Location: ./Admin/index.php");
+                        } else {
+                            header("Location: ./Clientes/index.php");
                         }
-                        
-                        header("Location: ./Clientes/index.php");
                         exit;
                     } else {
                         $error = "Tu cuenta está inactiva.";
@@ -52,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $nombre = trim($_POST['nombre']);
         $apellido = trim($_POST['apellido']);
         $identificacion = $_POST['identificacion'];
+        $nro_identificacion = trim($_POST['nro_identificacion']); 
         $telefono = trim($_POST['telefono']);
         $licencia_conducir = trim($_POST['licencia_conducir']);
         $email = trim($_POST['email']);
@@ -76,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 // 2. Insertar en clientes con TODOS los datos requeridos
                 $stmt_cli = $pdo->prepare("INSERT INTO clientes (nombre, apellido, email, identificacion, id_usuario, telefono, licencia_conducir) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $identificacion_completa = $tipo_identificacion . "-" . $nro_identificacion;
                 $stmt_cli->execute([$nombre, $apellido, $email, $identificacion, $id_usuario, $telefono, $licencia_conducir]);
 
                 $pdo->commit();
@@ -168,7 +173,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         </div>
 
-        <div id="register-section" class="p-10 <?php echo ($action === 'register' && $error) ? '' : 'hidden'; ?>">
+        
+<div id="register-section" class="p-10 <?php echo ($action === 'register' && $error) ? '' : 'hidden'; ?>">
             <form method="POST" action="">
                 <input type="hidden" name="action" value="register">
                 
@@ -183,13 +189,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Tipo de Documento</label>
-                    <select name="identificacion" class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm bg-white outline-none">
-                        <option value="CI">Cédula (CI)</option>
-                        <option value="Pasaporte">Pasaporte</option>
-                        <option value="RIF">RIF</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Tipo Doc.</label>
+                        <select name="identificacion" class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm bg-white outline-none font-bold">
+                            <option value="V">V- (Venezolano)</option>
+                            <option value="E">E- (Extranjero)</option>
+                            <option value="P">Pasaporte</option>
+                            <option value="J">RIF (J-)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-brandDark/50 mb-1 font-heading">Nro. Cédula / ID</label>
+                        <input type="text" name="nro_identificacion" placeholder="Ej. 12345678" required class="w-full px-3 py-2 border rounded border-brandMain/30 text-sm focus:border-brandBlue-900 outline-none">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
