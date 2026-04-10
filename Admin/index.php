@@ -96,7 +96,7 @@ if ($_SESSION['rol'] !== 'admin') {
 
         <div class="p-6 border-t border-white/10 space-y-4">
             <a href="../Clientes/index.php" class="block text-center bg-brandMain/10 hover:bg-brandMain/20 text-white font-heading tracking-widest text-[10px] py-3 rounded uppercase border border-white/5 transition-all">
-                Ir a Vista Cliente
+                Ir a inicio
             </a>
             <a href="../login.php" class="block text-center text-red-400 font-heading tracking-widest text-[10px] uppercase hover:underline">
                 Cerrar Sesión Segura
